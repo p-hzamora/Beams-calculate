@@ -1,0 +1,20 @@
+﻿  VAA.cpp
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VAA.cpp(24,26): warning C4244: 'argumento': conversión de 'double' a 'short'; posible pérdida de datos
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VAA.cpp(25,29): warning C4018: '<': no coinciden signed/unsigned
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VAA.cpp(35,26): warning C4244: 'argumento': conversión de 'double' a 'short'; posible pérdida de datos
+  VAE.cpp
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VAE.cpp(58,27): warning C4244: 'argumento': conversión de 'double' a 'short'; posible pérdida de datos
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VAE.cpp(62,27): warning C4244: 'argumento': conversión de 'double' a 'short'; posible pérdida de datos
+  VEE.cpp
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VEE.cpp(55,26): warning C4244: 'argumento': conversión de 'double' a 'short'; posible pérdida de datos
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\VEE.cpp(60,26): warning C4244: 'argumento': conversión de 'double' a 'short'; posible pérdida de datos
+  Vvol.cpp
+  funciones.cpp
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\funciones.cpp(277,60): warning C4267: 'inicializando': conversión de 'size_t' a 'unsigned int'; posible pérdida de datos
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\funciones.cpp(322,36): warning C4267: 'inicializando': conversión de 'size_t' a 'unsigned int'; posible pérdida de datos
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\funciones.cpp(337,36): warning C4267: 'inicializando': conversión de 'size_t' a 'unsigned int'; posible pérdida de datos
+  main.cpp
+  variables.cpp
+C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\Calculo a flexion\variables.cpp(135,29): warning C4018: '<': no coinciden signed/unsigned
+  Generando código...
+  Calculo a flexion.vcxproj -> C:\Users\phzam\Desktop\UNIVERSIDAD\carrera\6\1º cuatrimestre\Calculo a flexion\x64\Debug\flexion con clases.exe

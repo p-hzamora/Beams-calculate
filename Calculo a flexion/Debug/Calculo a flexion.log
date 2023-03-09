@@ -1,0 +1,10 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(513,5): warning MSB8028: El directorio intermedio (Debug\) contiene archivos compartidos de otro proyecto (Calculo a flexion.vcxproj). Esto puede dar lugar a un comportamiento incorrecto de limpieza y recompilación.
+  main.cpp
+  funciones.cpp
+  VAA.cpp
+  VAE.cpp
+  variables.cpp
+  VEE.cpp
+  Vvol.cpp
+  Generando código...
+  Calculo a flexion.vcxproj -> C:\Users\phzam\Desktop\UNIVERSIDAD\6º\1º cuatrimestre\Proytos tecnicos  II\Calculo a flexion\Debug\flexion con clases.exe

@@ -1,0 +1,1329 @@
+//#include "Stdafx.h"
+#include <iostream>
+#include <stdio.h>
+#include <conio.h>
+#include <fstream>
+#include <vector>
+#include<Windows.h>
+#include <cmath>
+#include <algorithm>	// sort()
+#include <functional>   // greater()
+
+#include"Tabla de perfiles.h"
+
+using namespace std;
+
+#if !defined(PROPIEDADES)
+#define PROPIEDADES cout<<"\t\t";for (unsigned int fila = 0; fila < propiedades.size(); fila++) {cout << propiedades[fila] << "\t";}
+#endif
+
+#define CPDescentrada cout << "\n1.Carga puntual descentrada." << endl;
+#define CPCentrada cout << "\n2.Carga puntual centrada." << endl;
+#define DosCP cout << "\n3.Dos Cargas puntuales." << endl;
+#define CRCentrada cout << "\n4.Carga repartida centrada." << endl;
+#define CRExtV cout << "\n5.Carga repartida extremo vano." << endl;
+#define CRUniforme cout << "\n6.Carga repartida uniforme." << endl;
+#define CAscV cout << "\n7.Carga Ascendente desde vano." << endl;
+#define CDesV cout << "\n8.Carga Descendente desde vano." << endl;
+#define CAscVC cout << "\n9.Carga Ascendente vano completo." << endl;
+#define DosCDesCV cout << "\n10.Dos Cargas Descendentes hasta centro vano." << endl;
+#define DosCAscD cout << "\n11.Dos Cargas Ascendentes descentradas." << endl;
+#define DosCAscC cout << "\n12.Dos Cargas Ascendentes centradas." << endl;
+#define CDscVC cout << "\n13.Carga Descendente vano completo." << endl;
+#define DosCAscT cout << "\n14.Dos Cargas Ascendentes trapecio." << endl;
+#define MAp cout << "\n15.Momento en el apoyo." << endl;
+#define DosMIA cout << "\n16.Dos momentos invertidos en los apoyos." << endl;
+#define DosMomMS cout << "\n17.Dos momentos en el mismo sentido en apoyos." << endl;
+#define MCVano cout << "\n18.Momento centro vano." << endl;
+#define voladizo cout << "\n19.Voladizo simple con carga repartida total." << endl;
+
+#define IMPRIMIR_reaccionA(x) cout<<"\nCalculando esfuerzos..."; cout << "\n\t[+] Reaccion A = " << x.reaccionA << " KN" << endl; suma_reaccionA += x.reaccionA;
+#define IMPRIMIR_reaccionB(x) cout << "\t[+] Reaccion B = " << x.reaccionB << " KN" << endl; suma_reaccionB +=x.reaccionB;
+#define IMPRIMIR_cortante(x) cout << "\t[+] Cortante para x(" << numEcElast << ") = " << x.cortante << " KN" << endl;
+#define IMPRIMIR_momentoMaximo(x) cout << "\t[+] Momento maximo= " << x.momento_maximo << " m*KN" << endl;
+#define IMPRIMIR_momentoFlector(x) cout << "\t[+] Momento flector para x(" << numEcElast << ") = " << x.mf_x << " m*KN" << endl;
+#define IMPRIMIR_ecElastica(x) cout << "\t[+] Valor para x(" << numEcElast << ") de la ecuacion de la elastica = " << x.ecuacion_elastica << " *E*I*10-1 mm" << endl; 
+#define IMPRIMIR_flechaMaxima(x) cout << "\t[+] Flecha maxima= " << x.flechaMaxima << " *E*I*10-1 mm" << endl; 
+
+
+//ESTRUCTURA DE LAS VARIABLES QUE PODEMOS CALCULAR DE LOS PRONTUARIOS.
+
+typedef struct viga {
+	double reaccionA = 0;
+	double reaccionB = 0;
+	double cortante = 0;
+	double momento_maximo = 0;
+	double flechaMaxima = 0;
+	double mf_x = 0;
+	double ecuacion_elastica = 0;
+	vector<double> DiagCortante;
+	vector<double> Diagflectores;
+	vector<double> DiagElastica;
+}VA,VAE,Vvol;
+
+
+
+
+double luz =0 ;
+double numEcElast =0 ;
+double E = 1 ;
+double I = 1 ;
+double Q =1 ;
+double CP =0 ;
+double CV =0 ;
+double momento_inicial =0 ;
+double momento_inicial_izquierda =0 ;
+double momento_inicial_derecha =0 ;
+
+
+void carga_puntual_descentrada(VA* CPD); //1
+
+void Dos_cargas_puntuales_simetricas(VA* CPS); //3
+void Carga_Repartida_centrada(VA* CRC); //4
+
+void Carga_Repartida_uniforme(VA* CRU); //6
+void Carga_Ascendente(VA* CA); //7
+void Carga_Descendente_triangular(VA* CD); //8
+
+void Dos_Carga_Descendentes_hasta_centro_vano(VA* CDCV);//10
+void Dos_Carga_Ascendentes_descentradas(VA* CAD);//11
+void Carga_Descendente_vano_completo(VA* CDVC);//13
+void Dos_Carga_ascendentes_trapecio(VA* CAT);//14
+void Momento_en_el_apoyo(VA* MA);	//15
+void Dos_momentos_invertidos_en_apoyos(VA* MIA);//16
+void Dos_momentos_mismo_sentido_en_apoyos(VA* MMSA);//17
+void Momento_centro_del_vano(VA* MCV);//18
+void Voladizo_carga_repartida(VA* Vol);//19
+
+
+double imprimir_CPCV();
+double imprimir_Cpuntual();
+void imprimir_momento_unico();
+void imprimir_momentos();
+void calcularSolicitacion(VA x);
+void eleccion_de_diagramas();
+bool sumar_diagramas(VA vol,VA *x, bool *unaSolaCarga);
+void print_suma_diagramas(bool unaSolaCarga);
+void copiar_datos_notepad(VA* x);
+double buscarMayor(vector<double> vector);
+
+
+void mostrar_tabla();
+void buscador_de_valores();
+string mayuscula(string palabra);
+int comprobacionCortante(double comprobar_Wpl, vector<string> perfil, double caracMecanicas[][13]);
+int comprobacionCortanteUPE(double comprobar_Wpl, vector<string> perfil, double caracMecanicas[][15]);
+
+string buscarPerfil = "", buscarValor = "";
+int posicionfila = 0, posicioncolumna = 0;
+int opc = 0, opc2 = 0;
+
+//densidad del acero: 7850 kg/m3
+
+bool vano_bool = false;
+bool copia_de_datos = false;
+double longitud_voldizo = 0;
+vector <double> suma_DiagCortante(0);
+vector <double> suma_Diagflectores(0);
+vector <double> suma_DiagElastica(0);
+
+
+vector<double> unir_voladizo_vano(vector <double>voladi, vector <double> viga);
+vector<double> VVCort_sumados(0);
+vector<double> VVFlector_sumados(0);
+vector<double> VVFlecha_sumados(0);
+
+
+
+bool rep = false;
+char opcVigaSimetrica = 'n', vano = 'n';
+int main() {
+	VA CPuntual_descentrada;
+	VA Dos_CPuntuales;
+	VA CRepartida_centrada;
+	VA CRepartida_uniforme;
+	VA CAscendente;
+	VA CDescendente;
+	VA CAscendente_vano_completo;
+	VA Dos_CDescendentes_hasta_centro_vano;
+	VA Dos_CAscendentes_descentradas;
+	VA Dos_CAscendentes_centradas;
+	VA CDescendente_vano_completo;
+	VA Dos_CAscendentes_trapecio;
+	VA Momento_apoyo;
+	VA Dos_momentos_invertidos_apoyos;
+	VA Dos_momentos_iguales_en_apoyos;
+	VA Momento_centro_vano;
+	VA vol;
+	vector<double> suma_DiagCortante_copy;
+	vector<double> suma_Diagflectores_copy;
+	vector<double> suma_DiagElastica_copy;
+
+	bool unaSolaCarga = true;
+	
+	int opcion;
+
+	//PRIMERA PARTE
+	double suma_reaccionA = 0;
+	double suma_reaccionB = 0;
+	double suma_cortante = 0;
+	double suma_momento_maximo = 0;
+	double suma_flechaMaxima = 0;
+	double suma_mf_x = 0;
+	double suma_ecuacion_elastica = 0;
+
+	//SEGUNDA PARTE
+	double Qd = 1;
+	double Mpl = 1;
+	double Wpl = 1;
+	double Wel = 1;
+	double Mmaxd = 1;
+	double flecha_mayorada = 1;
+	double Vd = 1;
+	double Mestat = 1;
+	double fyd = 1;
+	double fy = 1;
+	double coefMayoracion = 1.05;
+
+
+	cout << "******************VIGAS APOYADAS EN LOS EXTREMOS*****************" << endl;
+	cout << "\nProntuario para calculo de todas las solicitaciones " << endl;
+	/*1*/	CPDescentrada
+	
+	/*3*/	DosCP
+	/*4*/	CRCentrada
+	/*6*/	CRUniforme
+	/*7*/	CAscV
+	/*8*/	CDesV
+	
+	/*10*/	DosCDesCV
+	/*11*/	DosCAscD
+	/*12*/	DosCAscC
+	/*13*/	CAscVC
+	/*14*/	DosCAscT
+	/*15*/	MAp
+	/*16*/	DosMIA
+	/*17*/	DosMomMS
+	/*18*/	MCVano
+	/*19*/	voladizo
+	cout << "\n";
+
+	cout << "\nLa viga dispone de voladizos? (s\\n): "; cin >> vano;
+	if (vano == 's' || vano == 'S') {
+		cout << "\nDistancia del voladizo: "; cin >> longitud_voldizo;
+		vano_bool = true;
+		cout << "Introduce el valor de las CARGAS sobre el voladizo [KN/m]: "; cin >> Q;
+		Voladizo_carga_repartida(&vol);
+		copiar_datos_notepad(&vol);
+	}
+	cout << "\nIntroduce la LUZ total de la viga [m]: "; cin >> luz;
+	cout << "\nTipo de esfuerzos en la viga: "; cin >> opcion;
+	cout << "\nLa viga es simetrica? (s\\n): "; cin >> opcVigaSimetrica;
+	if (opcVigaSimetrica == 's' || opcVigaSimetrica == 'S') {
+		numEcElast = luz / 2;
+	}
+	else {
+	numEcElastMAYOR:
+		cout << "\nPosicion en X para calcular las solicitaciones [m]: "; cin >> numEcElast;
+		if (numEcElast > luz) {
+			cout << "\tEl numero introducido es mayor a la luz de la viga." << endl;
+			goto numEcElastMAYOR;
+		}
+	}
+aqui:
+	switch (opcion) {
+	case 1: {
+		CPDescentrada
+		imprimir_Cpuntual();
+		carga_puntual_descentrada(&CPuntual_descentrada);
+		copiar_datos_notepad(&CPuntual_descentrada);
+		IMPRIMIR_reaccionA(CPuntual_descentrada)
+		IMPRIMIR_reaccionB(CPuntual_descentrada)
+		IMPRIMIR_cortante(CPuntual_descentrada)
+		IMPRIMIR_momentoMaximo(CPuntual_descentrada)
+		IMPRIMIR_momentoFlector(CPuntual_descentrada)
+		IMPRIMIR_ecElastica(CPuntual_descentrada)
+		IMPRIMIR_flechaMaxima(CPuntual_descentrada)
+		calcularSolicitacion(CPuntual_descentrada);
+		sumar_diagramas(vol, &CPuntual_descentrada, &unaSolaCarga);
+		break;
+	}
+	case 3: {
+		DosCP
+			imprimir_Cpuntual();
+		Dos_cargas_puntuales_simetricas(&Dos_CPuntuales);
+		copiar_datos_notepad(&Dos_CPuntuales);
+		IMPRIMIR_reaccionA(Dos_CPuntuales)
+			IMPRIMIR_reaccionB(Dos_CPuntuales)
+			IMPRIMIR_momentoMaximo(Dos_CPuntuales)
+			IMPRIMIR_flechaMaxima(Dos_CPuntuales)
+			IMPRIMIR_cortante(Dos_CPuntuales)
+			IMPRIMIR_momentoFlector(Dos_CPuntuales)
+			IMPRIMIR_ecElastica(Dos_CPuntuales)
+
+			calcularSolicitacion(Dos_CPuntuales);
+		sumar_diagramas(vol, &Dos_CPuntuales, &unaSolaCarga);
+		break;
+	}
+	case 4: {
+		CRCentrada
+			imprimir_CPCV();
+		Carga_Repartida_centrada(&CRepartida_centrada);
+		copiar_datos_notepad(&CRepartida_centrada);
+		IMPRIMIR_reaccionA(CRepartida_centrada)
+			IMPRIMIR_reaccionB(CRepartida_centrada)
+			IMPRIMIR_momentoMaximo(CRepartida_centrada)
+			IMPRIMIR_flechaMaxima(CRepartida_centrada) //no tiene flecha maxima
+			IMPRIMIR_cortante(CRepartida_centrada)
+			IMPRIMIR_momentoFlector(CRepartida_centrada)
+			IMPRIMIR_ecElastica(CRepartida_centrada)
+			calcularSolicitacion(CRepartida_centrada);
+		sumar_diagramas(vol, &CRepartida_centrada, &unaSolaCarga);
+		break;
+	}
+	case 6: {
+		CRUniforme
+			imprimir_CPCV();
+		Carga_Repartida_uniforme(&CRepartida_uniforme);
+		copiar_datos_notepad(&CRepartida_uniforme);
+		IMPRIMIR_reaccionA(CRepartida_uniforme)
+			IMPRIMIR_reaccionB(CRepartida_uniforme)
+			IMPRIMIR_momentoMaximo(CRepartida_uniforme)
+			IMPRIMIR_flechaMaxima(CRepartida_uniforme)
+			IMPRIMIR_cortante(CRepartida_uniforme)
+			IMPRIMIR_momentoFlector(CRepartida_uniforme)
+			IMPRIMIR_ecElastica(CRepartida_uniforme)
+			calcularSolicitacion(CRepartida_uniforme);
+		sumar_diagramas(vol, &CRepartida_uniforme, &unaSolaCarga);
+
+		break;
+	}
+	case 7: {
+		CAscV
+			imprimir_CPCV();
+		Carga_Ascendente(&CAscendente);
+		copiar_datos_notepad(&CAscendente);
+		IMPRIMIR_reaccionA(CAscendente)
+			IMPRIMIR_reaccionB(CAscendente)
+			IMPRIMIR_momentoMaximo(CAscendente)
+			IMPRIMIR_flechaMaxima(CAscendente)
+			IMPRIMIR_cortante(CAscendente)
+			IMPRIMIR_momentoFlector(CAscendente)
+			IMPRIMIR_ecElastica(CAscendente)
+			calcularSolicitacion(CAscendente);
+		sumar_diagramas(vol, &CAscendente, &unaSolaCarga);
+		break;
+	}
+	case 8: {
+		CDesV
+			imprimir_CPCV();
+		Carga_Descendente_triangular(&CDescendente);
+		copiar_datos_notepad(&CDescendente);
+		IMPRIMIR_reaccionA(CDescendente)
+			IMPRIMIR_reaccionB(CDescendente)
+			IMPRIMIR_momentoMaximo(CDescendente)
+			IMPRIMIR_flechaMaxima(CDescendente)
+			IMPRIMIR_cortante(CDescendente)
+			IMPRIMIR_momentoFlector(CDescendente)
+			IMPRIMIR_ecElastica(CDescendente)
+			calcularSolicitacion(CDescendente);
+		sumar_diagramas(vol, &CDescendente, &unaSolaCarga);
+		break;
+	}
+	case 9: {
+	}
+	case 10: {
+		DosCDesCV
+			imprimir_CPCV();
+		Dos_Carga_Descendentes_hasta_centro_vano(&Dos_CDescendentes_hasta_centro_vano);
+		copiar_datos_notepad(&Dos_CDescendentes_hasta_centro_vano);
+		IMPRIMIR_reaccionA(Dos_CDescendentes_hasta_centro_vano)
+			IMPRIMIR_reaccionB(Dos_CDescendentes_hasta_centro_vano)
+			IMPRIMIR_momentoMaximo(Dos_CDescendentes_hasta_centro_vano)
+			IMPRIMIR_flechaMaxima(Dos_CDescendentes_hasta_centro_vano)
+			IMPRIMIR_cortante(Dos_CDescendentes_hasta_centro_vano)
+			IMPRIMIR_momentoFlector(Dos_CDescendentes_hasta_centro_vano)
+			IMPRIMIR_ecElastica(Dos_CDescendentes_hasta_centro_vano)
+			calcularSolicitacion(Dos_CDescendentes_hasta_centro_vano);
+		sumar_diagramas(vol, &Dos_CDescendentes_hasta_centro_vano, &unaSolaCarga);
+		break;
+	}
+
+	case 11: {
+	casoanterior:
+		DosCAscD
+			imprimir_CPCV();
+		Dos_Carga_Ascendentes_descentradas(&Dos_CAscendentes_descentradas);
+		copiar_datos_notepad(&Dos_CAscendentes_descentradas);
+		IMPRIMIR_reaccionA(Dos_CAscendentes_descentradas)
+			IMPRIMIR_reaccionB(Dos_CAscendentes_descentradas)
+			IMPRIMIR_momentoMaximo(Dos_CAscendentes_descentradas)
+			IMPRIMIR_flechaMaxima(Dos_CAscendentes_descentradas)
+			IMPRIMIR_cortante(Dos_CAscendentes_descentradas)
+			IMPRIMIR_momentoFlector(Dos_CAscendentes_descentradas)
+			IMPRIMIR_ecElastica(Dos_CAscendentes_descentradas)
+			calcularSolicitacion(Dos_CAscendentes_descentradas);
+		sumar_diagramas(vol, &Dos_CAscendentes_descentradas, &unaSolaCarga);
+		break;
+	}
+	case 12: {
+		goto casoanterior;
+		break;
+	}
+	case 13: {
+		CDscVC
+			imprimir_CPCV();
+		Carga_Descendente_vano_completo(&CDescendente_vano_completo);
+		copiar_datos_notepad(&CDescendente_vano_completo);
+		IMPRIMIR_reaccionA(CDescendente_vano_completo)
+			IMPRIMIR_reaccionB(CDescendente_vano_completo)
+			IMPRIMIR_momentoMaximo(CDescendente_vano_completo)
+			IMPRIMIR_flechaMaxima(CDescendente_vano_completo)
+			IMPRIMIR_cortante(CDescendente_vano_completo)
+			IMPRIMIR_momentoFlector(CDescendente_vano_completo)
+			IMPRIMIR_ecElastica(CDescendente_vano_completo)
+			calcularSolicitacion(CDescendente_vano_completo);
+		sumar_diagramas(vol,& CDescendente_vano_completo, &unaSolaCarga);
+		break;
+	}
+	case 14: {
+		DosCAscT
+			imprimir_CPCV();
+		Dos_Carga_ascendentes_trapecio(&Dos_CAscendentes_trapecio);
+		copiar_datos_notepad(&Dos_CAscendentes_trapecio);
+		IMPRIMIR_reaccionA(Dos_CAscendentes_trapecio)
+			IMPRIMIR_reaccionB(Dos_CAscendentes_trapecio)
+			IMPRIMIR_momentoMaximo(Dos_CAscendentes_trapecio)
+			IMPRIMIR_flechaMaxima(Dos_CAscendentes_trapecio)
+			IMPRIMIR_cortante(Dos_CAscendentes_trapecio)
+			IMPRIMIR_momentoFlector(Dos_CAscendentes_trapecio)
+			IMPRIMIR_ecElastica(Dos_CAscendentes_trapecio)
+			calcularSolicitacion(Dos_CAscendentes_trapecio);
+		sumar_diagramas(vol, &Dos_CAscendentes_trapecio, &unaSolaCarga);
+		break;
+	}
+	case 15: {
+		MAp
+			imprimir_momento_unico();
+		Momento_en_el_apoyo(&Momento_apoyo);
+		copiar_datos_notepad(&Momento_apoyo);
+		IMPRIMIR_reaccionA(Momento_apoyo)
+			IMPRIMIR_reaccionB(Momento_apoyo)
+			IMPRIMIR_momentoMaximo(Momento_apoyo)
+			IMPRIMIR_flechaMaxima(Momento_apoyo)
+			IMPRIMIR_cortante(Momento_apoyo)
+			IMPRIMIR_momentoFlector(Momento_apoyo)
+			IMPRIMIR_ecElastica(Momento_apoyo)
+			calcularSolicitacion(Momento_apoyo);
+		sumar_diagramas(vol, &Momento_apoyo, &unaSolaCarga);
+		break;
+	}
+	case 16: {
+		DosMIA
+		imprimir_momentos();
+		Dos_momentos_invertidos_en_apoyos(&Dos_momentos_invertidos_apoyos);
+		copiar_datos_notepad(&Dos_momentos_invertidos_apoyos);
+		IMPRIMIR_reaccionA(Dos_momentos_invertidos_apoyos)
+		IMPRIMIR_reaccionB(Dos_momentos_invertidos_apoyos)
+		IMPRIMIR_momentoMaximo(Dos_momentos_invertidos_apoyos)
+		IMPRIMIR_flechaMaxima(Dos_momentos_invertidos_apoyos)
+		IMPRIMIR_cortante(Dos_momentos_invertidos_apoyos)
+		IMPRIMIR_momentoFlector(Dos_momentos_invertidos_apoyos)
+		IMPRIMIR_ecElastica(Dos_momentos_invertidos_apoyos)
+		calcularSolicitacion(Dos_momentos_invertidos_apoyos);
+		sumar_diagramas(vol, &Dos_momentos_invertidos_apoyos, &unaSolaCarga);
+		break;
+	}
+	case 17: {
+		DosMomMS
+		imprimir_momentos();
+		Dos_momentos_mismo_sentido_en_apoyos(&Dos_momentos_iguales_en_apoyos);
+		copiar_datos_notepad(&Dos_momentos_iguales_en_apoyos);
+		IMPRIMIR_reaccionA(Dos_momentos_iguales_en_apoyos)
+		IMPRIMIR_reaccionB(Dos_momentos_iguales_en_apoyos)
+		IMPRIMIR_momentoMaximo(Dos_momentos_iguales_en_apoyos)
+		IMPRIMIR_flechaMaxima(Dos_momentos_iguales_en_apoyos)
+		IMPRIMIR_cortante(Dos_momentos_iguales_en_apoyos)
+		IMPRIMIR_momentoFlector(Dos_momentos_iguales_en_apoyos)
+		IMPRIMIR_ecElastica(Dos_momentos_iguales_en_apoyos)
+		calcularSolicitacion(Dos_momentos_iguales_en_apoyos);
+		sumar_diagramas(vol,& Dos_momentos_iguales_en_apoyos, &unaSolaCarga);
+		break;
+	}
+	case 18: {
+		MCVano
+		imprimir_momento_unico();
+		Momento_centro_del_vano(&Momento_centro_vano);
+		copiar_datos_notepad(&Momento_centro_vano);
+		IMPRIMIR_reaccionA(Momento_centro_vano)
+		IMPRIMIR_reaccionB(Momento_centro_vano)
+		IMPRIMIR_momentoMaximo(Momento_centro_vano)
+		IMPRIMIR_flechaMaxima(Momento_centro_vano)
+		IMPRIMIR_cortante(Momento_centro_vano)
+		IMPRIMIR_momentoFlector(Momento_centro_vano)
+		IMPRIMIR_ecElastica(Momento_centro_vano)
+		calcularSolicitacion(Momento_centro_vano);
+		sumar_diagramas(vol, &Momento_centro_vano, &unaSolaCarga);
+		break;
+	}
+	case 19: {
+		voladizo
+		imprimir_CPCV();
+		Voladizo_carga_repartida(&vol);
+		copiar_datos_notepad(&vol);
+		IMPRIMIR_reaccionA(vol)
+		IMPRIMIR_reaccionB(vol)
+		IMPRIMIR_momentoMaximo(vol)
+		IMPRIMIR_flechaMaxima(vol)
+		IMPRIMIR_cortante(vol)
+		IMPRIMIR_momentoFlector(vol)
+		IMPRIMIR_ecElastica(vol)
+		calcularSolicitacion(vol);
+		sumar_diagramas(vol, &vol, &unaSolaCarga);
+		break;
+	}
+	}
+	char nuevaSolicitacion = 'n';
+	cout << "\nDesea recalcular otro esfuerzo diferente? (s\\n): "; cin >> nuevaSolicitacion;
+	if (nuevaSolicitacion == 's' || nuevaSolicitacion == 'S') {
+		cout << "\nElija otro esfuerzo para la viga: "; cin >> opcion;
+		goto aqui;
+	}
+	if (vano_bool == true) {
+		for (unsigned int i = 0; i < CRepartida_uniforme.Diagflectores.size(); i++) {
+			CRepartida_uniforme.Diagflectores[i] += vol.DiagCortante.back();
+		}
+		VVCort_sumados = unir_voladizo_vano(vol.DiagCortante, CRepartida_uniforme.DiagCortante);
+		VVFlector_sumados = unir_voladizo_vano(vol.Diagflectores, CRepartida_uniforme.Diagflectores);
+		VVFlecha_sumados = unir_voladizo_vano(vol.DiagElastica, CRepartida_uniforme.DiagElastica);
+		print_suma_diagramas(unaSolaCarga);		// Imprimir los diagramas con todas las cargas a las que esta sometida la viga
+		for (unsigned int i = 0; i < VVCort_sumados.size(); i++) {				//podemos sustituir todo esto usando buscarMayor que he creado
+			suma_DiagCortante_copy.push_back(VVCort_sumados[i]);				//podemos sustituir todo esto usando buscarMayor que he creado
+			suma_Diagflectores_copy.push_back(VVFlector_sumados[i]);			//podemos sustituir todo esto usando buscarMayor que he creado
+			suma_DiagElastica_copy.push_back(VVFlecha_sumados[i]);				//podemos sustituir todo esto usando buscarMayor que he creado
+		}																		//podemos sustituir todo esto usando buscarMayor que he creado
+	}																			//podemos sustituir todo esto usando buscarMayor que he creado
+	else {																		//podemos sustituir todo esto usando buscarMayor que he creado
+		for (unsigned int i = 0; i < suma_DiagCortante.size(); i++) {			//podemos sustituir todo esto usando buscarMayor que he creado
+			suma_DiagCortante_copy.push_back(suma_DiagCortante[i]);				//podemos sustituir todo esto usando buscarMayor que he creado
+			suma_Diagflectores_copy.push_back(suma_Diagflectores[i]);			//podemos sustituir todo esto usando buscarMayor que he creado
+			suma_DiagElastica_copy.push_back(suma_DiagElastica[i]);				//podemos sustituir todo esto usando buscarMayor que he creado
+		}
+		print_suma_diagramas(unaSolaCarga);		// Imprimir los diagramas con todas las cargas a las que esta sometida la viga
+	}
+
+	//ordenamos los vectores en una copia para posteriormente acceder al valor maximo
+	sort(suma_DiagCortante_copy.begin(), suma_DiagCortante_copy.end());			//podemos sustituir todo esto usando buscarMayor que he creado
+	sort(suma_Diagflectores_copy.begin(),suma_Diagflectores_copy.end());		//podemos sustituir todo esto usando buscarMayor que he creado
+	sort(suma_DiagElastica_copy.begin(), suma_DiagElastica_copy.end());			//podemos sustituir todo esto usando buscarMayor que he creado
+	double usuario;
+	cout << "Donde quiere calcular la comprobacion de la flecha en X: "; cin >> usuario;
+	usuario *= 1000;
+	Vd = suma_DiagCortante_copy.back();
+	Mmaxd = suma_Diagflectores_copy.back();
+	flecha_mayorada = suma_DiagElastica[(int)usuario];
+
+	cout << "\nCalculando esfuerzos ultimos totales..." << endl;
+
+	cout << "\t[+] Reaccion A = " << suma_reaccionA << " KN" << endl;
+	cout << "\t[+] Reaccion B = " << suma_reaccionB << " KN" << endl;
+	cout << "\t[+] Cortante en el centro del  vano = " << suma_DiagCortante[(int)(luz * 1000 / 2)] << " KN" << endl;
+	cout << "\t[+] Momento maximo= " << Mmaxd << " m*KN" << endl;
+	cout << "\t[+] Momento flector para x(" << luz / 2 << ") = " << suma_Diagflectores[(int)(luz * 1000 / 2)] << " m*KN" << endl;
+	cout << "\t[+] Flecha maxima= " << flecha_mayorada << " *E*I*10-1 mm\n" << endl; 
+
+	cout << "\t[+] Carga total soportada= " << suma_reaccionA + suma_reaccionB << " KN" << endl;
+	int diagramas;
+	char bucle2='n';
+	//Bucle  infinito Repetir a la hora de imprimir un diagrama
+	for (;;) {
+		cout << "\nDesea volver a mostrar un diagrama? (s/n): "; cin >> bucle2;
+		if (bucle2 == 's') {
+			cout << "\nElija el diagrama: "; cin >> diagramas;
+
+			switch (diagramas) {
+			case 1:system("start \"\" \"C:\\Diagramas\\Diagrama de cortantes.py\""); break;
+			case 2:system("start \"\" \"C:\\Diagramas\\Diagrama de momentos.py\""); break;
+			case 3:system("start \"\" \"C:\\Diagramas\\Diagrama de flechas.py\"");  break;
+			}
+		}
+		else {
+			break;
+		}
+	}
+
+	//==============================================================================================================================
+	string tipoPerfil;
+	int seleccion=1;
+	cout << "\n*************Calculo de ELU y agotamiento de las secciones **************\n" << endl;
+	cout << "Indique el tipo de perfil (IPE,UPE,HEB,IPN,UPN): "; cin >> tipoPerfil;
+	if (mayuscula(tipoPerfil) == "IPE") { seleccion = 1; }
+	if (mayuscula(tipoPerfil) == "UPE") { seleccion = 2; }
+	if (mayuscula(tipoPerfil) == "HE" ) { seleccion = 3; }
+	if (mayuscula(tipoPerfil) == "UPN") { seleccion = 4; }
+	if (mayuscula(tipoPerfil) == "IPN") { seleccion = 5; }
+	printf("\n\n********************** COMPROBACION EN ELU ************************\n");
+	cout << "Introduce el valor numerico del tipo de acero de la viga: "; cin >> fy;
+
+	//si las cargas son desfavorables... Tabla 4.1b Coeficientes parciales de seguridad de las acciones para ELU 
+
+
+	double coeficiente = pow(10, 6);
+	int iteracionPerfiles=0;
+	double h = 0;
+	double tw = 0;
+	double Vpl_Rd =0;
+	double flechaAdmisible = 0;
+	Qd = CP + CV;
+	fyd = fy / coefMayoracion;
+	double comprobar_Wpl = Mmaxd / fyd * 1000;
+
+	printf("\n\n********************** TIPOS DE COMPROBACION ************************\n"); \
+		cout << "\n1.PREDIMENSION DEL PERFIL A FLEXION." << endl;
+	cout << "2.COMPROBACION A CORTANTE." << endl;
+	cout << "3.COMPROBACION POSIBLES SECCION Md + Vd." << endl;
+	cout << "4.COMPROBACION DE FLECHAS." << endl;
+	printf("\nPulse 5 para salir.\n\n");
+	for (;;) {
+		printf("\nElija una opcion: "); cin >> opc;
+
+ 		switch (opc) {
+		case 1:
+			switch (seleccion) {
+			case 1:
+				iteracionPerfiles = comprobacionCortante(comprobar_Wpl,IPE, caracMecanicasIPE);
+				break;
+			case 2:
+				iteracionPerfiles = comprobacionCortanteUPE(comprobar_Wpl, UPE, caracMecanicasUPE);
+				break;
+			case 3:
+				iteracionPerfiles = comprobacionCortante(comprobar_Wpl, HE, caracMecanicasHE);
+				break;
+			}
+			break;
+		case 2:
+			h = caracFisicasIPE[iteracionPerfiles][1];	// 1 hace referencia a la posicion en la matriz de datoFisicosIPE
+			tw = caracFisicasIPE[iteracionPerfiles][3]; // 3 hace referencia a la posicion en la matriz de datoFisicosIPE
+			Vpl_Rd = 0.001*h * tw * (fyd / sqrt(3)); // 0.001 para pasar de N a KN		lo que soporta el perfil
+			if (Vd <= Vpl_Rd) {
+				cout << "El perfil elegido es valido." << endl;
+				if (Vpl_Rd / 2 > Vd) {
+					cout << "No debemos realizar el punto 3.\"COMPROBACION POSIBLES SECCION Md + Vd\" ya que el cortante mayorado es menor al que soporta el perfil." << endl;
+				}
+			}
+			else {
+				cout << "El perfil no cumple la normativa." << endl;
+				//iteracionPerfiles++;
+			} 
+			break;
+		case 3:
+			cout << "en vigas apoyadas es muy raro este caso" << endl; //en vigas apoyadas es muy raro su comprobacion pero si en los casos que la viga tenga un voladizo
+			break;
+		case 4:
+			cout << "1.Integridad." << endl;
+			cout << "2.Apariencia" << endl;
+			cout << "3.Confort." << endl;
+			cout << "\nElija el tipo de fleha que desea introducir: "; cin >> opc2;
+
+			switch (opc2) {
+			case 1:
+				E = 210000;
+				printf("integridad\n");
+				flechaAdmisible = luz*1000 / 400;
+				flecha_mayorada = flecha_mayorada * coeficiente/E/(caracMecanicasIPE[iteracionPerfiles][1]*pow(10,4)); // 1 hace referencia al valor de Iy en la matriz y pow(10,-5) se usa para pasar a KN/mm2
+				cout << "La flecha myorada " << flecha_mayorada << " es menor a " << flechaAdmisible << endl;
+				break;
+			case 2:
+				printf("Apariencia\n");
+				break;
+			case 3:
+				printf("confort\n");
+				break;
+			};
+			break;
+		case 5:
+			break;
+		};
+		if (opc == 5) {
+			break;
+		}
+	}
+
+	
+
+
+
+
+	char mostrar = 'n';
+	cout << "\nDesea mostrar las tablas de perfiles?: "; cin >> mostrar;
+	if (mostrar == 's') {
+		mostrar_tabla();
+	}
+	char verifica = 'n';
+	cout << "\nDesea buscar un perfil (s\\n): "; cin >> verifica;
+	if (verifica == 's') {
+		cin.ignore();
+		buscador_de_valores();
+	}
+	system("pause");
+	return 0;
+}
+
+
+
+
+
+//VARIABLES DE IMPRESION E INTRODUCCION DE CARGAS
+void imprimir_momento_unico() {
+	//vano_bool = false;
+	cout << "Introduce el valor del MOMENTO en KN*m: "; cin >> momento_inicial;
+}
+void imprimir_momentos() {
+	//vano_bool = false;
+	cout << "Introduce el valor del MOMENTO de la IZQUIERDA en KN*m: "; cin >> momento_inicial_izquierda;
+	cout << "Introduce el valor del MOMENTO de la DERECHA en KN*m: "; cin >> momento_inicial_derecha;
+}
+double imprimir_CPCV() {
+	//Mirar 1:32:00		D:\UNIVERSIDAD\Proyectos II\2021-09-13 15-43-08.mkv
+	cout << "Introduce el valor de las CARGAS PERMANENTES en KN/m: "; cin >> CP;
+	cout << "Introduce el valor de las CARGAS VARIABLES en KN/m: "; cin >> CV;
+	//CP *= 1.35;
+	//CV *= 1.5;
+	Q = CP + CV; //1.35 +1.5 son los coeficientes para mayorar las cargas en ELU en otros estados como ELS pueden no ser esos valores
+	return Q;
+}
+double imprimir_Cpuntual() {
+	//vano_bool = false;
+	cout << "Introduce el valor de la CARGA puntual en KN: "; cin >> CP;
+	Q = CP;
+	return Q;
+}
+
+
+//Declarar funciones 
+void copiar_datos_notepad(VA* x) {		//Solo afecta al bloc de notas no al vector del eje X e Y de la viga.
+	if (vano_bool != true || copia_de_datos==true) {
+		ofstream cortante;
+		cortante.open("C:\\Diagramas\\Diagrama de cortantes.txt");
+		ofstream flector;
+		flector.open("C:\\Diagramas\\Diagrama de momentos.txt");
+		ofstream elastica;
+		elastica.open("C:\\Diagramas\\Diagrama de flechas.txt");
+
+		for (unsigned int i = 0; i < x->DiagCortante.size(); i++) {
+			cortante << i << "|" << x->DiagCortante[i] << endl;
+			flector << i << "|" << x->Diagflectores[i] << endl;
+			elastica << i << "|" << x->DiagElastica[i] << endl;
+		}
+		cortante << vano_bool << "|" << longitud_voldizo; cortante.close();
+		flector << vano_bool << "|" << longitud_voldizo; flector.close();
+		elastica << vano_bool << "|" << longitud_voldizo; elastica.close();
+		eleccion_de_diagramas();
+	}
+	else {
+		ofstream voladizo_cortante;
+		voladizo_cortante.open("C:\\Diagramas\\Diagrama de voladizo_cortante.txt");
+		ofstream voladizo_flector;
+		voladizo_flector.open("C:\\Diagramas\\Diagrama de voladizo_flector.txt");
+		ofstream voladizo_elastica;
+		voladizo_elastica.open("C:\\Diagramas\\Diagrama de voladizo_elastica.txt");
+		for (unsigned int i = 0; i < x->DiagCortante.size(); i++) {
+			voladizo_cortante << i << "|" << x->DiagCortante[i] << endl;
+			voladizo_flector << i << "|" << x->Diagflectores[i] << endl;
+			voladizo_elastica << i << "|" << x->DiagElastica[i] << endl;
+		}
+		copia_de_datos++;
+	}
+}
+void calcularSolicitacion(VA x) {
+	char solicitacion = 'n';
+	double nuevaPosicion;
+	int total;
+	double cortante, flectores, elastica;
+
+	cout << "\n\nDesea calcular alguna otra solicitacion de la misma viga? (s\\n): "; cin >> solicitacion;
+	if (solicitacion == 's' || solicitacion == 'S') {
+		cout << "\nPosicion X del nuevo punto de solicitaciones [m]: "; cin >> nuevaPosicion;
+		total = (int)(nuevaPosicion * 1000);
+		cortante = x.DiagCortante[total];
+		flectores = x.Diagflectores[total];
+		elastica = x.DiagElastica[total];
+		if (cortante >= 0 && cortante <= 0.0000001) {
+			cortante = 0;
+		}
+		if (flectores >= 0 && flectores <= 0.0000001) {
+			flectores = 0;
+		}
+		if (elastica >= 0 && elastica <= 0.0000001) {
+			elastica = 0;
+		}
+		cout << endl;
+		cout << "\t[+] Cortante en x(" << nuevaPosicion << ") = " << cortante << " KN" << endl;
+		cout << "\t[+] Flector en x(" << nuevaPosicion << ") = " << flectores << " m*KN" << endl;
+		cout << "\t[+] Flecha en x(" << nuevaPosicion  << ") = " << elastica << "  *E*I*10-1 mm" << endl;
+		calcularSolicitacion(x);
+	}
+}
+void eleccion_de_diagramas() {
+
+	char bucle = 'n', bucle2 = 'n'; 
+	cout << "\nImprimiendo diagramas..." << endl;
+	cout << "\t[1] Cortante." << endl;
+	cout << "\t[2] Momentos." << endl;
+	cout << "\t[3] Elastica." << endl;
+	system("start \"\" \"C:\\Diagramas\\Diagrama de cortantes.py\"");
+	system("start \"\" \"C:\\Diagramas\\Diagrama de momentos.py\"");
+	system("start \"\" \"C:\\Diagramas\\Diagrama de flechas.py\"");
+}
+vector<double> unir_voladizo_vano(vector<double> voladi, vector<double> viga) {
+	int tamanio=voladi.size() + viga.size();
+	for (unsigned int i = 0; i < viga.size(); i++) {
+		voladi.push_back(viga[i]);
+	}
+	return voladi;
+}
+bool sumar_diagramas(VA vol,VA *x, bool* unaSolaCarga) {
+	if (vano_bool != true) { //no tiene voladizo
+		suma_DiagCortante.resize(x->DiagCortante.size());
+		suma_Diagflectores.resize(x->DiagCortante.size());
+		suma_DiagElastica.resize(x->DiagCortante.size());
+		for (unsigned int i = 0; i < x->DiagCortante.size(); i++) {
+			suma_DiagCortante[i] += x->DiagCortante[i];
+			suma_Diagflectores[i] += x->Diagflectores[i];
+			suma_DiagElastica[i] += x->DiagElastica[i];
+		}
+		*unaSolaCarga = suma_DiagCortante == x->DiagCortante ? true : false;
+		//Redimensionamos todas las variables originales para que no guarden registros de usos anteriores, los registros anteriores se sumaran en el vector suma_....
+		x->DiagCortante.resize(0);
+		x->Diagflectores.resize(0);
+		x->DiagElastica.resize(0);
+
+		return *unaSolaCarga;
+	}
+	else {
+		suma_DiagCortante.resize(x->DiagCortante.size() + vol.DiagCortante.size());
+		suma_Diagflectores.resize(x->DiagCortante.size() + vol.DiagCortante.size());
+		suma_DiagElastica.resize(x->DiagCortante.size() + vol.DiagCortante.size());
+		for (unsigned int i = (int)(luz- longitud_voldizo)*1000; i < x->DiagCortante.size() - vol.DiagCortante.size(); i++) {
+			suma_DiagCortante[i] += x->DiagCortante[i];
+			suma_Diagflectores[i] += x->Diagflectores[i];
+			suma_DiagElastica[i] += x->DiagElastica[i];
+		}
+		return 0;
+	}
+}
+void print_suma_diagramas(bool unaSolaCarga) {
+	if (unaSolaCarga != true) {
+		cout << "\n\n*******************Impresion de diagramas con todas las cargas***********************" << endl;
+		ofstream cortante;
+		cortante.open("C:\\Diagramas\\Diagrama de cortantes.txt");
+
+		ofstream flector;
+		flector.open("C:\\Diagramas\\Diagrama de momentos.txt");
+
+		ofstream elastica;
+		elastica.open("C:\\Diagramas\\Diagrama de flechas.txt");
+
+		if (vano_bool == false) {
+			for (unsigned int i = 0; i < suma_DiagCortante.size(); i++) {
+				cortante << i << "|" << suma_DiagCortante[i] << endl;
+				flector << i << "|" << suma_Diagflectores[i] << endl;
+				elastica << i << "|" << suma_DiagElastica[i] << endl;
+			}
+		}
+		else {
+			for (unsigned int i = 0; i < VVCort_sumados.size(); i++) {
+				cortante << i << "|" << VVCort_sumados[i] << endl;
+				flector << i << "|" << VVFlector_sumados[i] << endl;
+				elastica << i << "|" << VVFlecha_sumados[i] << endl;
+			}
+		}
+		cortante << vano_bool << "|" << longitud_voldizo; cortante.close();
+		flector << vano_bool << "|" << longitud_voldizo; flector.close();
+		elastica << vano_bool << "|" << longitud_voldizo; elastica.close();
+
+		system("start \"\" \"C:\\Diagramas\\Diagrama de cortantes.py\"");
+		system("start \"\" \"C:\\Diagramas\\Diagrama de momentos.py\"");
+		system("start \"\" \"C:\\Diagramas\\Diagrama de flechas.py\"");
+	}
+}
+double buscarMayor(vector<double> vector) {
+	double mayor;
+	mayor = vector[0];
+	for (unsigned int j = 1; j < vector.size(); j++) {
+		if (mayor < vector[j]) {
+			mayor = vector[j];
+		}
+	}
+	return mayor;
+}
+ 
+//DECLARACION DE FORMULAS DE PRONTUARIOS
+/*1*/  void carga_puntual_descentrada(VA* CPD) { //1
+	double a, b, x, incremento = 0.001;
+	cout << "Digite la distancia por la IZQUIERDA de la carga puntual: "; cin >> a;
+	b = luz - a;
+	CPD->reaccionA = Q * b / luz;
+	CPD->reaccionB = Q * a / luz;
+	CPD->momento_maximo = Q * a * b / luz;
+	CPD->flechaMaxima = (Q * b / (9 * E * I * luz * sqrt(3))) * pow(pow(luz, 2) - pow(b, 2), 3 / 2);
+	x = 0;
+
+	//********************OBTENCION DE LAS GRAFICAS ********************
+	do {
+		if (x <= a) {
+			CPD->DiagCortante.push_back(CPD->reaccionA);
+			CPD->Diagflectores.push_back(CPD->reaccionA * x);
+			CPD->DiagElastica.push_back(((Q * luz * b * x) / (6 * E * I)) * (1 - (pow(b, 2) / pow(luz, 2)) - (pow(x, 2) / pow(luz, 2))));
+		}
+		else {
+			CPD->DiagCortante.push_back(-CPD->reaccionA);
+			CPD->Diagflectores.push_back(CPD->reaccionB * (luz - x));
+			CPD->DiagElastica.push_back((((Q * luz * a * (luz - x)) / (6 * E * I)) * (1 - (pow(a, 2) / pow(luz, 2)) - pow(((luz - x) / luz), 2))));
+		}
+		x += incremento;
+	} while (x <= luz + 0.0000000001);
+
+	CPD->cortante = CPD->DiagCortante[(int)(numEcElast / incremento)];
+	CPD->mf_x = CPD->Diagflectores[(int)(numEcElast / incremento)];
+	CPD->ecuacion_elastica = CPD->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*3*/  void Dos_cargas_puntuales_simetricas(VA* CPS) {
+	double a;
+	double incremento = 0.001, x = 0;
+	cout << "Digite la distancia desde el lado izquierdo a la primera carga puntual: "; cin >> a;
+	CPS->reaccionA = Q;
+	CPS->reaccionB = CPS->reaccionA;
+	CPS->momento_maximo = Q * a;	//en el centro del vano.
+	CPS->flechaMaxima = (Q * a / (24 * E * I)) * ((3 * pow(luz, 2)) - (4 * pow(a, 2)));
+
+	//ecuacion de momentos flectores.
+	do {
+		if (x <= a) { //lado izquierdo
+			CPS->DiagCortante.push_back(CPS->reaccionA);
+			CPS->Diagflectores.push_back(Q * x);
+			CPS->DiagElastica.push_back((Q * x / (6 * E * I)) * ((3 * a * luz) - (3 * pow(a, 2) - pow(x, 2))));
+		}
+		else if (x >= luz - a) { //lado derecho
+			CPS->DiagCortante.push_back(-CPS->reaccionA);
+			CPS->Diagflectores.push_back(Q * (luz - x));
+			CPS->DiagElastica.push_back(0); //duda
+		}
+		else { //centro de la viga
+			CPS->DiagCortante.push_back(0);
+			CPS->Diagflectores.push_back(Q * a);
+			CPS->DiagElastica.push_back(((Q * a) / (6 * E * I)) * ((3 * x * luz) - (3 * pow(x, 2) - pow(a, 2))));
+		}
+		x += incremento;
+	} while (x <= luz + 0.0000000001);
+
+	CPS->cortante = CPS->DiagCortante[(int)(numEcElast / incremento)];
+	CPS->mf_x = CPS->Diagflectores[(int)(numEcElast / incremento)];
+	CPS->ecuacion_elastica = CPS->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*4*/  void Carga_Repartida_centrada(VA* CRC) {
+	double a, b, c;
+	double incremento = 0.001, x = 0;
+	cout << "Digite la distancia de comienzo por la IZQUIERDA de la CARGA REPARTIDA [m]: "; cin >> a;
+	cout << "Digite la distancia final de la CARGA REPARTIDA [m]: "; cin >> c;
+	c -= a;
+	a += c / 2;
+	b = luz - a;
+	CRC->reaccionA = Q * b * c / luz;
+	CRC->reaccionB = Q * a * c / luz;
+	CRC->momento_maximo = ((Q * b * c) / (2 * luz)) * ((2 * a) - (c)+(b * c / luz));
+
+	//********************OBTENCION DE LAS GRAFICAS DE MOMENTOS FLECTORES*******************
+	do {
+		if (x <= a - (c / 2)) {
+			CRC->DiagCortante.push_back(CRC->reaccionA);
+			CRC->Diagflectores.push_back((Q * b * c) * x / (luz));
+			CRC->DiagElastica.push_back(((Q * b * c) / (6 * luz)) * (x / (E * I)) * (-(pow(x, 2)) + a * (luz + b - ((pow(c, 2)) / (4 * a)))));
+		}
+		else if (x > a - (c / 2) && x <= a + c / 2) {
+			CRC->DiagCortante.push_back(CRC->reaccionA - Q * ((c / 2) - a + x));
+			CRC->Diagflectores.push_back(((Q * b * c) * x / (luz)) - (Q / 2) * pow(x - (a - (c / 2)), 2));
+			CRC->DiagElastica.push_back((Q / (24 * E * I * luz)) * (luz * pow(x - (a - (c / 2)), 4) - (4 * b * c * pow(x, 3)) + (4 * a * b * c) * (luz + b - ((pow(c, 2)) / (4 * a))) * x));
+		}
+		else {
+			CRC->DiagCortante.push_back(-CRC->reaccionB);
+			CRC->Diagflectores.push_back(CRC->reaccionB * (luz - x));
+			CRC->DiagElastica.push_back(((Q * a * c) / (6 * luz)) * ((luz - x) / E * I) * ((-pow((luz - x), 2)) + b * (luz + a - ((pow(c, 2)) / (4 * b)))));
+		}
+		x += incremento;
+	} while (x <= luz + 0.0000000001);
+
+	CRC->cortante = CRC->DiagCortante[(int)(numEcElast / incremento)];
+	CRC->mf_x = CRC->Diagflectores[(int)(numEcElast / incremento)];
+	CRC->ecuacion_elastica = CRC->DiagElastica[(int)(numEcElast / incremento)];
+	CRC->flechaMaxima = buscarMayor(CRC->DiagElastica);
+}
+/*6*/  void Carga_Repartida_uniforme(VA* CRU) {
+	double incremento = 0.001, x = 0;
+	CRU->reaccionA = Q * luz / 2;
+	CRU->reaccionB = CRU->reaccionA;
+	CRU->momento_maximo = Q * pow(luz, 2) / 8;
+	CRU->flechaMaxima = (5 * Q * pow(luz, 4)) / (384 * E * I);
+	do {
+		CRU->DiagCortante.push_back(Q * (luz / 2 - x));
+		CRU->DiagElastica.push_back((Q * x / (24 * E * I)) * (pow(x, 3) - (2 * luz * pow(x, 2)) + pow(luz, 3)));
+		CRU->Diagflectores.push_back((Q * x * 0.5) * (luz - x));
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+
+	CRU->cortante = CRU->DiagCortante[(int)(numEcElast / incremento)];
+	CRU->mf_x = CRU->Diagflectores[(int)(numEcElast / incremento)];
+	CRU->ecuacion_elastica = CRU->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*7*/  void Carga_Ascendente(VA* CA) {
+	double a, b;
+	double incremento = 0.001, x = 0;
+	cout << "Digite la distancia de la CARGA REPARTIDA: "; cin >> a;
+	b = luz - a;
+
+	//reacciones
+	CA->reaccionA = ((Q * a) / (6 * luz) * (3 * luz - 2 * a));
+	CA->reaccionB = (Q * pow(a, 2)) / (3 * luz);
+	//Momentos maximos
+	CA->momento_maximo = (Q * pow(a, 2) / 3) * (1 - ((2 * a) / (3 * luz)) * sqrt(1 - ((2 * a) / (3 * luz))));
+	CA->flechaMaxima = ((Q * pow(a, 2)) / (9 * E * I * luz)) * ((pow(luz, 2) / 3) - ((pow(a, 2)) / (5))) * sqrt((pow(luz, 2) / 3) - ((pow(a, 2)) / (5)));
+
+	do {
+		if (x <= a) {
+			CA->DiagCortante.push_back(CA->reaccionA - ((Q * pow(x, 2)) / (2 * a)));
+			CA->DiagElastica.push_back(((Q * x) / (360 * a * E * I * luz)) * ((3 * luz * pow(x, 4) - 10 * (3 * luz - 2 * a) * pow(a, 2) * pow(x, 2) + pow(a, 3) * (40 * pow(luz, 2) - 45 * a * luz + 12 * pow(a, 2)))));
+			CA->Diagflectores.push_back((Q * x / 6) * ((3 - (2 * a / luz)) * a - (pow(x, 2) / a)));
+		}
+		else {
+			CA->DiagCortante.push_back(-CA->reaccionB);
+			CA->DiagElastica.push_back(-((Q * pow(a, 2)) / (18 * E * I * luz)) * (luz - x) * (pow((luz - x), 2) - pow(luz, 2) * (1 - ((3 * pow(a, 2)) / (5 * pow(luz, 2))))));
+			CA->Diagflectores.push_back(Q * (pow(a, 2) / 3) * (1 - x / luz));
+		}
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+	CA->cortante = CA->DiagCortante[(int)(numEcElast / incremento)];
+	CA->mf_x = CA->Diagflectores[(int)(numEcElast / incremento)];
+	CA->ecuacion_elastica = CA->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*8*/  void Carga_Descendente_triangular(VA* CD) {
+	double incremento = 0.001, x = 0;
+	double a, b;
+	cout << "Digite la distancia de la CARGA REPARTIDA: "; cin >> a;
+	b = luz - a;
+
+	//reacciones
+	CD->reaccionA = ((Q * a) / (6 * luz)) * (3 * luz -a);
+	CD->reaccionB = (Q * pow(a, 2)) / (6* luz);
+
+	//Momentos maximos
+	CD->momento_maximo = (Q * pow(a, 2) /6) * ((1-a/(3*luz)) - ((Q*pow(a,3)) / (9 * luz)) * sqrt(1 - (a / (3 * luz))));
+	CD->flechaMaxima = ((Q * pow(a, 2)) / (18 * E * I * luz)) * ((pow(luz, 2) / 3) - ((pow(a, 2)) / (10))) * sqrt((pow(luz, 2) / 3) - ((pow(a, 2)) / (10)));
+
+	do {
+		if (x <= a) {
+			CD->DiagCortante.push_back(CD->reaccionA - (Q * x)* (1-(x/(2 * a))));
+			CD->DiagElastica.push_back(((Q * x) / (360 * a * E * I * luz)) * ((3 * luz * pow(x, 4)) - (15 * a * luz * pow(x, 3)) + (10 * pow(a, 2) * (3 * luz - a) * pow(x, 2)) - pow(a, 3) * (20 * pow(luz, 2) - (15 * a * luz) + 3 * pow(a, 2))));
+			CD->Diagflectores.push_back((Q * x / 6) * ((3*a - (pow(a,2) / luz))- (x/a) * (3*a-x)));
+		}
+		else {
+			CD->DiagCortante.push_back(-CD->reaccionB);
+			CD->DiagElastica.push_back(-((Q * pow(a, 2)* (luz - x)) / (360 * E * I * luz)) * (10*pow((luz - x), 2) - (10*pow(luz, 2) - (10* pow(luz, 2)-3* pow(a, 2)))));
+			CD->Diagflectores.push_back(Q * (pow(a, 2) / 6) * (1 - x / luz));
+		}
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+	CD->cortante = CD->DiagCortante[(int)(numEcElast / incremento)];
+	CD->mf_x = CD->Diagflectores[(int)(numEcElast / incremento)];
+	CD->ecuacion_elastica = CD->DiagElastica[(int)(numEcElast / incremento)];
+}		//cuidado
+/*10Momento MAL*/ void Dos_Carga_Descendentes_hasta_centro_vano(VA* CDCV) {
+	double a = luz / 2;
+	double incremento = 0.001, x = 0;
+	//reacciones
+	CDCV->reaccionA = (Q*luz/4);
+	CDCV->reaccionB = CDCV->reaccionA;
+	//Momentos maximos
+	CDCV->momento_maximo = ((1/24)*Q*pow(luz,2));
+	CDCV->flechaMaxima = ((3*Q * pow(luz, 4)) / (640 * E * I));
+
+	do {
+		if (x <= a) {
+			CDCV->DiagCortante.push_back(CDCV->reaccionA - Q * (1 - x / luz) * x);
+			CDCV->DiagElastica.push_back(((Q * x) / (192 * E * I * luz)) * ((16/5 * pow(x, 4) - 8 *luz* pow(x, 3) +8*pow(luz,2)* pow(x, 2) -3*pow(luz, 4))));
+			CDCV->Diagflectores.push_back(CDCV->reaccionA * x - (Q * pow(x, 2)) * ((1 / 2) - (x / (3 * luz))));
+		}
+		else {
+			CDCV->DiagCortante.push_back(-CDCV->reaccionB + Q * (1 - x / luz) * x);
+			CDCV->DiagElastica.push_back(((Q * x) / (192 * E * I * luz)) * ((16 / 5 * pow(x, 4) - 8 * luz * pow(x, 3) + 8 * pow(luz, 2) * pow(x, 2) - 3 * pow(luz, 4))));
+			CDCV->Diagflectores.push_back((Q * luz / 12) * (luz - 3 * x) + (Q * pow(x, 2) * ((1 / 2) - (x / (3 * luz)))));
+		}
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+	CDCV->cortante = CDCV->DiagCortante[(int)(numEcElast / incremento)];
+	CDCV->mf_x = CDCV->Diagflectores[(int)(numEcElast / incremento)];
+	CDCV->ecuacion_elastica = CDCV->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*11*/ void Dos_Carga_Ascendentes_descentradas(VA* CAD) {
+	double a,b;
+	double incremento = 0.001, x = 0;
+	cout << "Digite la distancia en metros hasta el punto maximo de la CARGA : "; cin >> a;
+	b = luz - a;
+	//reacciones
+	CAD->reaccionA = (Q / 6) * (luz + b);
+	CAD->reaccionB = (Q / 6) * (luz + a);
+	//Momentos maximos
+	CAD->momento_maximo = (Q/9)*sqrt(a/3*pow(2*luz-a,3));
+
+	do {
+		if (x <= a) {
+			CAD->DiagCortante.push_back(CAD->reaccionA - Q * (pow(x, 2) / (2 * a)));
+			CAD->DiagElastica.push_back(((Q * x) / (360 * E * I)) * (((3 / a) * pow(x, 4) - 10 * (luz + b) * pow(x, 2) + (luz + b) * (7 * pow(luz, 2) - 3 * pow(b, 2)))));
+			CAD->Diagflectores.push_back((Q / 6) * (2 * luz - a) * x - (Q * pow(x, 3)) / (6 * a));
+		}
+		else {
+			CAD->DiagCortante.push_back(-CAD->reaccionB + Q * ((pow(luz-x,2))/ (2*b)));
+			CAD->DiagElastica.push_back(((Q * (luz - x)) / (360 * E * I )) * ((3 / b) * pow((luz-x), 4) - 10 * (luz + a) * pow(luz-x, 2) + (luz + a ) * (7 * pow(luz, 2) - 3 * pow(a, 2))));
+			CAD->Diagflectores.push_back(CAD->reaccionB* (luz - x) - (Q / 6) * ((pow(luz - x, 3)) / (luz - a)));
+		}
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+	CAD->cortante = CAD->DiagCortante[(int)(numEcElast / incremento)];
+	CAD->mf_x = CAD->Diagflectores[(int)(numEcElast / incremento)];
+	CAD->ecuacion_elastica = CAD->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*13*/ void Carga_Descendente_vano_completo(VA* CDVC) {
+}
+/*14*/ void Dos_Carga_ascendentes_trapecio(VA* CAT) {
+}
+/*15*/ void Momento_en_el_apoyo(VA* MA) {
+	double incremento = 0.001, x = 0;
+	MA->reaccionA = momento_inicial/luz;
+	MA->reaccionB = -MA->reaccionA;
+	MA->flechaMaxima = -(momento_inicial * pow(luz, 2)) / (9 * sqrt(3) * E * I);
+	do {
+		MA->DiagCortante.push_back(MA->reaccionA);
+		MA->DiagElastica.push_back(((momento_inicial*luz)/(6*E*I))*(luz-x)*(1-pow(((luz-x)/luz),2)));
+		MA->Diagflectores.push_back(-momento_inicial*(1-x/luz));
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+
+	MA->cortante = MA->DiagCortante[(int)(numEcElast / incremento)];
+	MA->mf_x = MA->Diagflectores[(int)(numEcElast / incremento)];
+	MA->ecuacion_elastica = MA->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*16*/ void Dos_momentos_invertidos_en_apoyos(VA* MIA) {
+	double incremento = 0.001, x = 0;
+	MIA->reaccionA = (momento_inicial_izquierda-momento_inicial_derecha) / luz;
+	MIA->reaccionB = -MIA->reaccionA;
+	MIA->flechaMaxima = -(momento_inicial * pow(luz, 2)) / (9 * sqrt(3) * E * I);
+	do {
+		MIA->DiagCortante.push_back(MIA->reaccionA);
+		MIA->DiagElastica.push_back(((momento_inicial_izquierda * x) / (6 * E * I)) * (luz - x) * (1 + ((luz - x) / luz)+(momento_inicial_derecha/momento_inicial_izquierda)*(1+x/luz)));
+		MIA->Diagflectores.push_back(-(momento_inicial_izquierda/luz) * (luz-x)-(momento_inicial_derecha/luz)*x);
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+
+	MIA->cortante = MIA->DiagCortante[(int)(numEcElast / incremento)];
+	MIA->mf_x = MIA->Diagflectores[(int)(numEcElast / incremento)];
+	MIA->ecuacion_elastica = MIA->DiagElastica[(int)(numEcElast / incremento)];
+
+}
+/*17*/ void Dos_momentos_mismo_sentido_en_apoyos(VA* MMSA) {
+	double incremento = 0.001, x = 0;
+	MMSA->reaccionA = (momento_inicial_izquierda + momento_inicial_derecha) / luz;
+	MMSA->reaccionB = -MMSA->reaccionA;
+	MMSA->flechaMaxima = -(momento_inicial * pow(luz, 2)) / (9 * sqrt(3) * E * I);
+	do {
+		MMSA->DiagCortante.push_back(MMSA->reaccionA);
+		MMSA->DiagElastica.push_back(((x * (luz - x)) / (6 * E * I)) * ((momento_inicial_izquierda + momento_inicial_derecha) * x - (2 * momento_inicial_izquierda - momento_inicial_derecha) * luz));
+		MMSA->Diagflectores.push_back(-(momento_inicial_izquierda / luz) * (luz - x) + (momento_inicial_derecha / luz) * x);
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+
+	MMSA->cortante = MMSA->DiagCortante[(int)(numEcElast / incremento)];
+	MMSA->mf_x = MMSA->Diagflectores[(int)(numEcElast / incremento)];
+	MMSA->ecuacion_elastica = MMSA->DiagElastica[(int)(numEcElast / incremento)];
+
+}
+/*18*/ void Momento_centro_del_vano(VA* MCV) {
+	double incremento = 0.001, x = 0;
+	double a,b;
+	cout << "Digite la distancia donde se aplica el MOMENTO: "; cin >> a;
+	b = luz - a;
+
+	//reacciones
+	MCV->reaccionA = -momento_inicial / luz;
+	MCV->reaccionB = -MCV->reaccionA;
+	MCV->flechaMaxima = (momento_inicial*a*b)/(3*E*I*luz)*(b-a);
+	do {
+		if (x <= a) {
+			MCV->DiagCortante.push_back(MCV->reaccionA);
+			MCV->DiagElastica.push_back(-((momento_inicial*luz*x)/(6*E*I))*(1-3*(pow(b,2)/pow(luz,2))-(pow(x, 2) / pow(luz, 2))));
+			MCV->Diagflectores.push_back(MCV->reaccionA*x);
+		}
+		else {
+			MCV->DiagCortante.push_back(MCV->reaccionA);
+			MCV->DiagElastica.push_back(((momento_inicial*luz*(luz-x))/(6*E*I))*(1-3*(pow(a,2)/pow(luz,2))-(pow((luz-x)/luz,2))));
+			MCV->Diagflectores.push_back(MCV->reaccionB * (luz-x));
+		}
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+
+	MCV->momento_maximo = abs(-(momento_inicial / luz) * a + (momento_inicial / luz) * b);
+	MCV->cortante = MCV->DiagCortante[(int)(numEcElast / incremento)];
+	MCV->mf_x = MCV->Diagflectores[(int)(numEcElast / incremento)];
+	MCV->ecuacion_elastica = MCV->DiagElastica[(int)(numEcElast / incremento)];
+}
+/*19*/ void Voladizo_carga_repartida(VA* Vol) {
+	double incremento = 0.001, x = 0;
+	luz= vano_bool == true ? longitud_voldizo : luz ;
+	Vol->reaccionA = 0;
+	Vol->reaccionB = Q * luz;
+	Vol->flechaMaxima = (Q * pow(luz, 4)) / (8 * E * I);
+	do {
+		Vol->DiagCortante.push_back(-Q * x);
+		Vol->DiagElastica.push_back((Q / (24 * E * I)) * pow(luz - x, 3) * ((3 * pow(luz, 2)) + (2 * luz * x) + pow(x, 2)));
+		Vol->Diagflectores.push_back(-Q * (pow(x, 2) / 2));
+		x += 0.001;
+	} while (x <= luz + 0.0000000001);
+
+	Vol->cortante = Vol->DiagCortante[(int)(numEcElast / incremento)];
+	Vol->mf_x = Vol->Diagflectores[(int)(numEcElast / incremento)];
+	Vol->ecuacion_elastica = Vol->DiagElastica[(int)(numEcElast / incremento)];
+}
+
+
+//Segunda parte
+string mayuscula(string palabra) {
+	for (unsigned int i = 0; i < palabra.length(); i++) {
+		palabra[i] = toupper(palabra[i]);
+	}
+	return palabra;
+}
+void mostrar_tabla() {
+	//imprimir la columna vector de perfil IPE
+	PROPIEDADES;
+	printf("\n\n");
+	for (unsigned int fila = 0; fila < IPE.size(); fila++) {
+		cout << IPE[fila] << "\t\t";					//	Imprimir el vector de cabecera de los datos
+		for (unsigned int columna = 0; columna < propiedades.size(); columna++) {
+			cout << caracMecanicasIPE[fila][columna] << "\t";		//Imprimir la matriz de datos
+		}printf("\n");
+	}
+	printf("\n\n\n");
+	//imprimir la columna vector de perfil UPE
+	PROPIEDADES; printf("ys\tym");
+	printf("\n\n");
+	for (unsigned int fila = 0; fila < UPE.size(); fila++) {
+		cout << UPE[fila] << "\t\t";
+		for (unsigned int columna = 0; columna < propiedades.size() + 2; columna++) {
+			cout << caracMecanicasUPE[fila][columna] << "\t";
+		}printf("\n");
+	}
+	printf("\n\n\n");
+	//imprimir la columna vector de perfil HE
+	PROPIEDADES;
+	printf("\n\n");
+	for (unsigned int fila = 0; fila < HE.size(); fila++) {
+		if (HE[fila][3] == 'A') {
+			cout << HE[fila] << "\t";
+		}
+		else {
+			cout << HE[fila] << "\t\t";
+		}
+		for (unsigned int columna = 0; columna < propiedades.size(); columna++) {
+			cout << caracMecanicasHE[fila][columna] << "\t";
+		}printf("\n");
+	}
+}
+void buscador_de_valores() {
+	//Buscador de palabras
+	printf("\nQue perfil desea buscar: "); getline(cin, buscarPerfil);
+	//If para tabla IPE
+	if (mayuscula(buscarPerfil)[0] == 'I') {
+		for (unsigned int i = 0; i < IPE.size(); i++) {
+			if (mayuscula(buscarPerfil) == mayuscula(IPE[i])) {
+				posicionfila = i;
+				break;
+			}
+		};
+	}
+	else  if (mayuscula(buscarPerfil)[0] == 'U') { //else if para tabla UPE
+		for (unsigned int i = 0; i < UPE.size(); i++) {
+			if (mayuscula(buscarPerfil) == mayuscula(UPE[i])) {
+				posicionfila = i;
+				break;
+			}
+		};
+	}
+	else if (mayuscula(buscarPerfil)[0] == 'H') {
+		for (unsigned int i = 0; i < HE.size(); i++) {
+			if (mayuscula(buscarPerfil) == mayuscula(HE[i])) {
+				posicionfila = i;
+				break;
+			}
+		};
+	}
+
+	printf("\nQue propiedad desea buscar: "); getline(cin, buscarValor);
+	for (unsigned int j = 0; j < propiedades.size(); j++) {
+		if (mayuscula(buscarValor) == mayuscula(propiedades[j])) {
+			posicioncolumna = j;
+			break;
+		}
+	};
+	if (mayuscula(buscarPerfil)[0] == 'I') {
+		cout << "\nEl valor buscado es: " << caracMecanicasIPE[posicionfila][posicioncolumna] << endl;
+	}
+	else  if ((mayuscula(buscarPerfil)[0] == 'U')) {
+		cout << "\nEl valor buscado es: " << caracMecanicasUPE[posicionfila][posicioncolumna] << endl;
+	}
+	else if ((mayuscula(buscarPerfil)[0] == 'H')) {
+		cout << "\nEl valor buscado es: " << caracMecanicasHE[posicionfila][posicioncolumna] << endl;
+	}
+	char verifica2;
+	cout << "Desea volver a buscar un perfil (s\\n): "; cin >> verifica2;
+	cin.ignore();
+	if (verifica2 == 's' || verifica2 == 'S') {
+		system("cls");
+		mostrar_tabla();
+		buscador_de_valores();
+	}
+}
+int comprobacionCortante(double comprobar_Wpl ,vector<string> perfil, double caracMecanicas[][13]) {
+	int iteracionPerfiles = 0;
+	do { iteracionPerfiles++; } while (caracMecanicas[iteracionPerfiles][3] <= comprobar_Wpl); //el 3 hace alusion a la posicion del Wpl.y y no el elastico porque se trata de un material de clase 1
+	if (iteracionPerfiles <= 16) {
+		cout << "EL IPE necesario para las cargas introducidas es un	 " << perfil[iteracionPerfiles] << endl;
+		//El codigo siguiente solo es para visualizar las propiedades del IPE que necesitamos
+		PROPIEDADES;
+		cout << "\n\n\t\t";
+		for (unsigned int columna = 0; columna < 13; columna++) {
+			cout << caracMecanicas[iteracionPerfiles][columna] << "\t";
+		};
+		cout << endl;
+	}
+	else {
+		cout << "Ningun perfil IPE sin ninguna modificacion puede soportar las cargas sobre el." << endl;
+	}
+	return iteracionPerfiles;
+}
+int comprobacionCortanteUPE(double comprobar_Wpl,  vector<string> perfil, double caracMecanicas[][15]) {
+	int iteracionPerfiles=0;
+	do { iteracionPerfiles++; } while (caracMecanicas[iteracionPerfiles][3] <= comprobar_Wpl); //el 3 hace alusion a la posicion del Wpl.y y no el elastico porque se trata de un material de clase 1
+	if (iteracionPerfiles <= 16) {
+		cout << "EL IPE necesario para las cargas introducidas es un	 " << perfil[iteracionPerfiles] << endl;
+	}
+	else {
+		cout << "Ningun perfil IPE sin ninguna modificacion puede soportar las cargas sobre el.";
+	}
+	//El codigo siguiente solo es para visualizar las propiedades del IPE que necesitamos
+	PROPIEDADES;
+	cout << "\n\n\t\t";
+	for (unsigned int columna = 0; columna < 13; columna++) {
+		cout << caracMecanicas[iteracionPerfiles][columna] << "\t";
+	};
+
+	cout << endl;
+	return iteracionPerfiles;
+}

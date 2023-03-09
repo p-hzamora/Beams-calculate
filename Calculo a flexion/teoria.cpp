@@ -1,0 +1,26 @@
+/*CALCULO A FLEXION
+ELU: (Wpl) CARGAS MAYORADAS.
+1.PREDIMENSION DEL PERFIL A FLEXION (OBTENEMOS UN PERFIL IPE=1,IPN=1,HEB).
+2.COMPROBACION A CORTANTE.
+3. COMPROBACION POSIBLES SECCION Md + Vd.
+
+ELS: (Wel)
+4.COMPROBACION DE FLECHAS:
+-APARIENCIA (empezar por aqui ya que es el mas restrictivo)
+-INTEGRIDAD
+-CONFORT
+
+
+
+
+
+PERITACION A FLEXION UNA VEZ QUE TENEMOS EL PERFIL ELEGIDO. (Para peritar el perfil deberiamos ver si cumple o no para reforzarlo o no)
+Para los examenes hemos de aportar una solucion. [Si se pide expresamente recalcular el perfil, se hace, si no no.]
+1. COMPROBACION A FLEXION.
+2.COMPROBACION A CORTANTE.
+3. COMPROBACION POSIBLES SECCION Md + Vd.
+4.COMPROBACION DE FLECHAS:
+*/
+
+
+//TRABAJAREMOS CON PERFILES IPE o HEB
